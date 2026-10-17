@@ -23,25 +23,45 @@ jobs:
         id: extract_notes
         run: |
           python3 -c "
-          import sys, re
-          with open('CHANGELOG.md', 'r') as f: content = f.read()
+          import sys, re, json
           
-          # Match the first version block using regex
-          match = re.search(r'^##\s+([0-9\.]+)\s+-\s+(.*?)\n(.*?)(?=\n---\n|\n## |\n##\n|\Z)', content, re.DOTALL | re.MULTILINE)
+          with open('droplet.json', 'r') as f:
+              droplet_meta = json.load(f)
+          droplet_name = droplet_meta.get('name', 'Wipextension')
+          
+          with open('CHANGELOG.md', 'r') as f:
+              content = f.read()
+          
+          # Match the first version block using regex (supports '## 1.1.0' and '## [1.1.0]')
+          match = re.search(r'^##\s+\[?([0-9\.]+)\]?(?:\s+-\s+(.*?))?\n(.*?)(?=\n---\n|\n## |\n##\n|\Z)', content, re.DOTALL | re.MULTILINE)
           if not match:
               print('Error: Could not parse latest release from CHANGELOG.md')
               sys.exit(1)
               
           version = match.group(1).strip()
-          title = match.group(2).strip()
+          title = (match.group(2) or '').strip()
           notes = match.group(3).strip()
+          release_name = f'v{version} - {title}' if title else f'v{version}'
           
           with open('release_version.txt', 'w') as f: f.write(version)
           with open('release_title.txt', 'w') as f: f.write(title)
+          with open('release_name.txt', 'w') as f: f.write(release_name)
           with open('release_notes.md', 'w') as f: f.write(notes)
+          with open('droplet_name.txt', 'w') as f: f.write(droplet_name)
           "
           echo "version=$(cat release_version.txt)" >> $GITHUB_ENV
           echo "title=$(cat release_title.txt)" >> $GITHUB_ENV
+          echo "release_name=$(cat release_name.txt)" >> $GITHUB_ENV
+          echo "droplet_name=$(cat droplet_name.txt)" >> $GITHUB_ENV
+
+      - name: Clone DroppyKit CLI
+        run: git clone https://gitlab.com/droppyformac1/droppykit.git ../droppykit
+
+      - name: Build Droplet
+        run: ../droppykit/Scripts/droppykit build
+
+      - name: Validate Droplet
+        run: ../droppykit/Scripts/droppykit validate
 
       - name: Push Git Tag
         run: |
@@ -57,29 +77,23 @@ jobs:
             git push origin "v${{ env.version }}"
           fi
 
-      - name: Clone DroppyKit CLI
-        run: git clone https://gitlab.com/droppyformac1/droppykit.git ../droppykit
-
-      - name: Build Droplet
-        run: ../droppykit/Scripts/droppykit build
-
       - name: Create ZIP Archive
         run: |
           cd .build
-          zip -r Cleankeyboard.zip Cleankeyboard.droplet
+          zip -r "${{ env.droplet_name }}.zip" "${{ env.droplet_name }}.droplet"
 
       - name: Upload Droplet Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Cleankeyboard
-          path: .build/Cleankeyboard.zip
+          name: ${{ env.droplet_name }}
+          path: .build/${{ env.droplet_name }}.zip
 
       - name: Release to GitHub
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.version }}
-          name: v${{ env.version }} - ${{ env.title }}
+          name: ${{ env.release_name }}
           body_path: release_notes.md
           files: |
-            .build/Cleankeyboard.zip
+            .build/${{ env.droplet_name }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}

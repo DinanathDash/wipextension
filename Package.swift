@@ -2,28 +2,27 @@
 import PackageDescription
 
 let package = Package(
-    name: "Cleankeyboard",
+    name: "Wipextension",
     platforms: [.macOS(.v14)],
     products: [
         // A droplet is a loadable bundle, so its product is a dynamic library.
         // Do not make it static: the app already carries DroppyKit, and a
         // second copy inside the droplet gives the same type two metadata
         // records, which fails every cast between them.
-        .library(name: "Cleankeyboard", type: .dynamic, targets: ["Cleankeyboard"])
+        .library(name: "Wipextension", type: .dynamic, targets: ["Wipextension"])
     ],
     dependencies: [
-        .package(url: "https://gitlab.com/droppyformac1/droppykit.git", from: "1.4.0")
+        .package(url: "https://gitlab.com/droppyformac1/droppykit.git", from: "1.20.1")
     ],
     targets: [
         .target(
-            name: "Cleankeyboard",
-            dependencies: [.product(name: "DroppyKit", package: "droppykit")],
-            resources: [.process("Resources")]
+            name: "Wipextension",
+            dependencies: [.product(name: "DroppyKit", package: "droppykit")]
         ),
         .executableTarget(
-            name: "CleankeyboardHarness",
+            name: "WipextensionHarness",
             dependencies: [
-                "Cleankeyboard",
+                "Wipextension",
                 .product(name: "DroppyKitHarness", package: "droppykit")
             ]
         )

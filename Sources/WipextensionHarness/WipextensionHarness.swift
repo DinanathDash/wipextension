@@ -1,5 +1,5 @@
 //
-//  CleankeyboardHarness.swift
+//  WipextensionHarness.swift
 //
 //  Run with: droppykit run
 //
@@ -9,9 +9,9 @@
 
 import DroppyKit
 import DroppyKitHarness
-import Cleankeyboard
+import Wipextension
 
 @main
-struct CleankeyboardHarness: DropletHarnessApp {
-    static func makeDroplet() -> any Droplet { CleankeyboardDroplet() }
+struct WipextensionHarness: DropletHarnessApp {
+    static func makeDroplet() -> any Droplet { WipextensionDroplet() }
 }
