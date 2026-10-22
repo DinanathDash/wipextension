@@ -53,13 +53,13 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
         }
     }
 
-    public static let acknowledgementsGitLabURL = "https://gitlab.com/droppyformac1/droplets/-/blob/main/droplets/wipextension/ACKNOWLEDGEMENTS.md"
+    public static let acknowledgementsGitLabURL = "https://gitlab.com/droppyformac1/droplets/-/blob/main/droplets/wipextension/NOTICE.md"
 
     public func openAcknowledgements() {
-        if let url = Bundle(for: WipextensionPrincipal.self).url(forResource: "ACKNOWLEDGEMENTS", withExtension: "md") {
-            NSWorkspace.shared.open(url)
-        } else if let legalURL = Bundle(for: WipextensionPrincipal.self).url(forResource: "Acknowledgements", withExtension: "txt", subdirectory: "Assets/Legal") {
+        if let legalURL = Bundle(for: WipextensionPrincipal.self).url(forResource: "Acknowledgements", withExtension: "txt", subdirectory: "Assets/Legal") {
             NSWorkspace.shared.open(legalURL)
+        } else if let url = Bundle(for: WipextensionPrincipal.self).url(forResource: "NOTICE", withExtension: "md") {
+            NSWorkspace.shared.open(url)
         } else if let url = URL(string: Self.acknowledgementsGitLabURL) {
             NSWorkspace.shared.open(url)
         }
@@ -97,6 +97,13 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
         }
     }
     @Published public private(set) var isShowingUnlockConfirmation: Bool = false
+
+    public var formattedRemainingTime: String {
+        let total = max(0, remainingSeconds)
+        let mins = total / 60
+        let secs = total % 60
+        return String(format: "%d:%02d", mins, secs)
+    }
 
     private let brightnessController = DisplayBrightnessController()
     fileprivate let hardwareFilter = DeviceHardwareFilter()
@@ -348,7 +355,7 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
             activitySubject.send(
                 LiveActivityState(
                     priority: 200,
-                    accessibilityTitle: isCleaning ? "Cleaning active" : "Cleaning unlocked",
+                    accessibilityTitle: isCleaning ? "Cleaning active (\(remainingSeconds / 60)m \(remainingSeconds % 60)s remaining)" : "Cleaning unlocked",
                     isInteractive: false,
                     joinsPersistentActivitySet: false,
                     compactPresentation: nil,
@@ -398,23 +405,11 @@ extension WipextensionDroplet: LiveActivityProviding {
     }
 
     public func makeCompactLeading() -> AnyView {
-        AnyView(
-            Image(systemName: mode.icon)
-                .font(.system(size: DroppyLiveActivityMetrics.iconSize, weight: .medium))
-                .foregroundStyle(AdaptiveColors.notchSurfacePrimaryText)
-                .id(isShowingUnlockConfirmation)
-                .transition(DroppyTransition.compactContent)
-        )
+        AnyView(WipextensionCompactLeading(droplet: self))
     }
 
     public func makeCompactTrailing() -> AnyView {
-        AnyView(
-            Image(systemName: isShowingUnlockConfirmation ? "lock.open.fill" : "lock.fill")
-                .font(.system(size: DroppyLiveActivityMetrics.iconSize, weight: .medium))
-                .foregroundStyle(AdaptiveColors.notchSurfacePrimaryText)
-                .id(isShowingUnlockConfirmation)
-                .transition(DroppyTransition.compactContent)
-        )
+        AnyView(WipextensionCompactTrailing(droplet: self))
     }
 
     public func makeExpanded(context: LiveActivityContext) -> AnyView {
@@ -422,14 +417,13 @@ extension WipextensionDroplet: LiveActivityProviding {
     }
 
     public func makeCompanionCompact(context: CompactLiveActivityContext) -> AnyView {
-        AnyView(
-            Image(systemName: isShowingUnlockConfirmation ? "checkmark.circle.fill" : mode.icon)
-                .font(.system(size: DroppyLiveActivityMetrics.iconSize, weight: .medium))
-                .foregroundStyle(AdaptiveColors.notchSurfacePrimaryText)
-        )
+        AnyView(WipextensionCompanionCompact(droplet: self))
     }
 
-    public func makeCompanionDetail(context: LiveActivityContext) -> AnyView? { nil }
+    public func makeCompanionDetail(context: LiveActivityContext) -> AnyView? {
+        guard isCleaning else { return nil }
+        return AnyView(WipextensionCompanionDetail(droplet: self))
+    }
 }
 
 // MARK: - Settings
