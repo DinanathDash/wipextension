@@ -85,7 +85,8 @@ struct TapeScrubHeatModel: Equatable {
     /// Spatial falloff factor for a tick `distance` ticks from the active
     /// reading: 1 at the reading, exp(-distance / falloffTicks) away from it.
     static func spatialFalloff(atTickDistance distance: Double) -> Double {
-        exp(-abs(distance) / falloffTicks)
+        guard distance.isFinite else { return 0 }
+        return exp(-abs(distance) / falloffTicks)
     }
 
     // MARK: State
@@ -113,7 +114,7 @@ struct TapeScrubHeatModel: Equatable {
     /// of polling.
     func timeUntilRest(at date: Date) -> Double {
         let current = intensity(at: date)
-        guard current > Self.restingIntensity else { return 0 }
+        guard current.isFinite, current > Self.restingIntensity else { return 0 }
         return Self.coolDownTimeConstant * log(current / Self.restingIntensity)
     }
 
@@ -126,6 +127,7 @@ struct TapeScrubHeatModel: Equatable {
     /// Returns false when the delta was too small to change anything.
     @discardableResult
     mutating func feed(deltaTicks: Double, at now: Date) -> Bool {
+        guard deltaTicks.isFinite else { return false }
         let magnitude = abs(deltaTicks)
         guard magnitude > 0.001 else { return false }
         let rawInterval = now.timeIntervalSince(anchorTime)

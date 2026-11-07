@@ -12,19 +12,29 @@ let package = Package(
         .library(name: "Wipextension", type: .dynamic, targets: ["Wipextension"])
     ],
     dependencies: [
-        .package(url: "https://gitlab.com/droppyformac1/droppykit.git", from: "1.20.1")
+        .package(url: "https://gitlab.com/droppyformac1/droppykit.git", from: "1.22.0")
     ],
     targets: [
         .target(
             name: "Wipextension",
-            dependencies: [.product(name: "DroppyKit", package: "droppykit")]
+            dependencies: [.product(name: "DroppyKit", package: "droppykit")],
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
             name: "WipextensionHarness",
             dependencies: [
                 "Wipextension",
                 .product(name: "DroppyKitHarness", package: "droppykit")
-            ]
+            ],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .testTarget(
+            name: "WipextensionTests",
+            dependencies: [
+                "Wipextension",
+                .product(name: "DroppyKitHarness", package: "droppykit")
+            ],
+            swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]
 )

@@ -58,6 +58,8 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
     public func openAcknowledgements() {
         if let legalURL = Bundle(for: WipextensionPrincipal.self).url(forResource: "Acknowledgements", withExtension: "txt", subdirectory: "Assets/Legal") {
             NSWorkspace.shared.open(legalURL)
+        } else if let url = Bundle(for: WipextensionPrincipal.self).url(forResource: "ACKNOWLEDGEMENTS", withExtension: "md") {
+            NSWorkspace.shared.open(url)
         } else if let url = Bundle(for: WipextensionPrincipal.self).url(forResource: "NOTICE", withExtension: "md") {
             NSWorkspace.shared.open(url)
         } else if let url = URL(string: Self.acknowledgementsGitLabURL) {
@@ -143,6 +145,7 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
         if isCleaning {
             stopCleaning()
         }
+        isShowingUnlockConfirmation = false
         activitySubject.send(nil)
         host = nil
     }
@@ -352,10 +355,13 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
 
     private func publishActivity() {
         if isCleaning || isShowingUnlockConfirmation {
+            let total = max(0, remainingSeconds)
+            let mins = total / 60
+            let secs = total % 60
             activitySubject.send(
                 LiveActivityState(
                     priority: 200,
-                    accessibilityTitle: isCleaning ? "Cleaning active (\(remainingSeconds / 60)m \(remainingSeconds % 60)s remaining)" : "Cleaning unlocked",
+                    accessibilityTitle: isCleaning ? "Cleaning active (\(mins)m \(secs)s remaining)" : "Cleaning unlocked",
                     isInteractive: false,
                     joinsPersistentActivitySet: false,
                     compactPresentation: nil,
@@ -500,7 +506,8 @@ extension DropletKeyboardShortcut {
         default: break
         }
 
-        let source = TISCopyCurrentASCIICapableKeyboardInputSource().takeRetainedValue()
+        guard let unmanagedSource = TISCopyCurrentASCIICapableKeyboardInputSource() else { return nil }
+        let source = unmanagedSource.takeRetainedValue()
         guard let layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else { return nil }
         let layout = unsafeBitCast(layoutData, to: CFData.self)
         let keyboardLayout = unsafeBitCast(CFDataGetBytePtr(layout), to: UnsafePointer<UCKeyboardLayout>.self)

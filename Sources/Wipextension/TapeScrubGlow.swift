@@ -35,7 +35,7 @@ struct TapeScrubGlowPhase {
     private var maxSpanTicks: CGFloat { 8 }
 
     func level(at date: Date) -> CGFloat {
-        guard isActive else { return 0 }
+        guard isActive, decay > 0 else { return 0 }
         let dt = CGFloat(date.timeIntervalSince(seedAt))
         guard dt > 0 else { return seed }
         return max(0, seed - dt / decay)
@@ -43,6 +43,7 @@ struct TapeScrubGlowPhase {
 
     /// Returns false when the delta was too small to light the tail.
     mutating func feed(delta: CGFloat, at now: Date) -> Bool {
+        guard delta.isFinite else { return false }
         let mag = min(1, abs(delta) / 1.6)
         guard mag > 0.001 else { return false }
         // Fresh run if we were idle or paused a beat: reset the swept span so
@@ -109,4 +110,3 @@ struct TapeScrubGlow: View {
             .offset(x: tailDir * length / 2)
     }
 }
-
