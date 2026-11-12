@@ -73,14 +73,22 @@ struct LiveActivityTests {
         droplet.startCleaning()
         if droplet.isCleaning {
             let activeState = states.compactMap { $0 }.last
-            #expect(activeState?.priority == 200)
-            #expect(activeState?.accessibilityTitle.contains("Cleaning active") == true)
+            #expect(activeState?.priority == DropletLiveActivityPriority.countdown.rawValue)
+            #expect(activeState?.priorityBand == .countdown)
+            #expect(activeState?.kind == .timer)
+            #expect(activeState?.accessibilityTitle == "Cleaning in progress")
+            #expect(activeState?.accessibilityValue?().contains("remaining") == true)
+            #expect(activeState?.joinsPersistentActivitySet == true)
             #expect(activeState?.expandedWidgetID == "wipextension")
 
             droplet.stopCleaning()
             let unlockState = states.compactMap { $0 }.last
-            #expect(unlockState?.priority == 200)
+            #expect(unlockState?.priority == DropletLiveActivityPriority.status.rawValue)
+            #expect(unlockState?.priorityBand == .status)
+            #expect(unlockState?.kind == .custom)
             #expect(unlockState?.accessibilityTitle == "Cleaning unlocked")
+            #expect(unlockState?.accessibilityValue?() == "Unlocked")
+            #expect(unlockState?.joinsPersistentActivitySet == true)
         }
     }
 

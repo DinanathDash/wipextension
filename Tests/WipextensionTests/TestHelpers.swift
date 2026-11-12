@@ -13,7 +13,7 @@ import Foundation
 /// Creates a test `DropletHost` with custom granted capabilities and an optional custom preferences store.
 @MainActor
 func makeHarnessHost(
-    capabilities: Set<DropletPermission> = [.accessibility, .globalShortcuts],
+    capabilities: Set<DropletPermission> = [.accessibility, .globalShortcuts, .hud],
     initialPreferences: [String: Any] = [:]
 ) -> DropletHost {
     let recorder = HarnessRecorder()
