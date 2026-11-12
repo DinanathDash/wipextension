@@ -2,6 +2,7 @@
 //  DisplayBrightnessController.swift
 //  Wipextension
 //
+// droppykit-lint: allow-file private-api: dims the built-in display via DisplayServices during cleaning session
 
 import AppKit
 import CoreGraphics

@@ -19,15 +19,6 @@ Wipextension is a droplet for [Droppy](https://getdroppy.app) that safely locks 
 4. Clean your Mac!
 5. Click **Stop Cleaning**, press your unlock shortcut, or wait for the countdown to unlock.
 
-## Developing
-
-```bash
-droppykit run        # open it in Droppy's Settings panel
-droppykit build      # produce Wipextension.droplet
-droppykit validate   # the checks a submission runs
-droppykit submit     # open the submission form, filled in from this checkout
-```
-
 ## The surfaces
 
 | Surface | Protocol |

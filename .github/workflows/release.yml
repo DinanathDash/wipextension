@@ -23,36 +23,35 @@ jobs:
         id: extract_notes
         run: |
           python3 -c "
-          import sys, re, json
-          
+          import sys, re, json, os
+
           with open('droplet.json', 'r') as f:
               droplet_meta = json.load(f)
           droplet_name = droplet_meta.get('name', 'Wipextension')
-          
+
           with open('CHANGELOG.md', 'r') as f:
               content = f.read()
-          
+
           # Match the first version block using regex (supports '## 1.1.0' and '## [1.1.0]')
-          match = re.search(r'^##\s+\[?([0-9\.]+)\]?(?:\s+-\s+(.*?))?\n(.*?)(?=\n---\n|\n## |\n##\n|\Z)', content, re.DOTALL | re.MULTILINE)
+          match = re.search(r'^##\s+\[?([0-9\.]+)\]?(?:\\s+-\\s+(.*?))?\\n(.*?)(?=\\n---\\n|\\n## |\\n##\\n|\\Z)', content, re.DOTALL | re.MULTILINE)
           if not match:
               print('Error: Could not parse latest release from CHANGELOG.md')
               sys.exit(1)
-              
+
           version = match.group(1).strip()
           title = (match.group(2) or '').strip()
           notes = match.group(3).strip()
           release_name = f'v{version} - {title}' if title else f'v{version}'
-          
-          with open('release_version.txt', 'w') as f: f.write(version)
-          with open('release_title.txt', 'w') as f: f.write(title)
-          with open('release_name.txt', 'w') as f: f.write(release_name)
-          with open('release_notes.md', 'w') as f: f.write(notes)
-          with open('droplet_name.txt', 'w') as f: f.write(droplet_name)
+
+          with open('/tmp/release_notes.md', 'w') as f:
+              f.write(notes)
+
+          with open(os.environ['GITHUB_ENV'], 'a') as env_file:
+              env_file.write(f'version={version}\n')
+              env_file.write(f'title={title}\n')
+              env_file.write(f'release_name={release_name}\n')
+              env_file.write(f'droplet_name={droplet_name}\n')
           "
-          echo "version=$(cat release_version.txt)" >> $GITHUB_ENV
-          echo "title=$(cat release_title.txt)" >> $GITHUB_ENV
-          echo "release_name=$(cat release_name.txt)" >> $GITHUB_ENV
-          echo "droplet_name=$(cat droplet_name.txt)" >> $GITHUB_ENV
 
       - name: Clone DroppyKit CLI
         run: git clone https://gitlab.com/droppyformac1/droppykit.git ../droppykit
@@ -93,7 +92,7 @@ jobs:
         with:
           tag_name: v${{ env.version }}
           name: ${{ env.release_name }}
-          body_path: release_notes.md
+          body_path: /tmp/release_notes.md
           files: |
             .build/${{ env.droplet_name }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}

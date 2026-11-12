@@ -213,6 +213,7 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
                         (1 << 29) // Gesture events
             }
 
+            // droppykit-lint: allow event-tap: suppresses keyboard and trackpad inputs while cleaning session is active
             eventTap = CGEvent.tapCreate(
                 tap: .cghidEventTap,
                 place: .headInsertEventTap,

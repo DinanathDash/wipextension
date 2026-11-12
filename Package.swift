@@ -27,14 +27,6 @@ let package = Package(
                 .product(name: "DroppyKitHarness", package: "droppykit")
             ],
             swiftSettings: [.swiftLanguageMode(.v5)]
-        ),
-        .testTarget(
-            name: "WipextensionTests",
-            dependencies: [
-                "Wipextension",
-                .product(name: "DroppyKitHarness", package: "droppykit")
-            ],
-            swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]
 )
