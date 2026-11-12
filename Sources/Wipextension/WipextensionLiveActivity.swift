@@ -9,9 +9,11 @@ import SwiftUI
 /// Compact leading accessory: Mode icon color-coded as per the active mode during lock and unlock.
 public struct WipextensionCompactLeading: View {
     @ObservedObject var droplet: WipextensionDroplet
+    var context: CompactLiveActivityContext?
 
-    public init(droplet: WipextensionDroplet) {
+    public init(droplet: WipextensionDroplet, context: CompactLiveActivityContext? = nil) {
         self.droplet = droplet
+        self.context = context
     }
 
     public var body: some View {
@@ -26,13 +28,15 @@ public struct WipextensionCompactLeading: View {
 /// Compact trailing accessory: Lock icon followed by reverse countdown timer, color-coded as per the active mode.
 public struct WipextensionCompactTrailing: View {
     @ObservedObject var droplet: WipextensionDroplet
+    var context: CompactLiveActivityContext?
 
-    public init(droplet: WipextensionDroplet) {
+    public init(droplet: WipextensionDroplet, context: CompactLiveActivityContext? = nil) {
         self.droplet = droplet
+        self.context = context
     }
 
     public var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             Image(systemName: droplet.isShowingUnlockConfirmation ? "lock.open.fill" : "lock.fill")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(droplet.mode.accentColor)
@@ -40,15 +44,14 @@ public struct WipextensionCompactTrailing: View {
                 .transition(DroppyTransition.compactContent)
 
             if droplet.isCleaning {
-                Text(droplet.formattedRemainingTime)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(droplet.mode.accentColor)
-                    .lineLimit(1)
-                    .frame(width: 39, alignment: .trailing)
-                    .contentTransition(.numericText(value: Double(droplet.remainingSeconds)))
-                    .animation(DroppyAnimation.state, value: droplet.remainingSeconds)
-                    .transition(DroppyTransition.compactContent)
+                DroppyCompactClock { _ in
+                    Text(droplet.formattedRemainingTime)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(droplet.mode.accentColor)
+                        .lineLimit(1)
+                }
+                .transition(DroppyTransition.compactContent)
             }
         }
     }
@@ -57,9 +60,11 @@ public struct WipextensionCompactTrailing: View {
 /// Companion pill compact mark: Color-coded icon when riding the secondary seat beside another active Live Activity.
 public struct WipextensionCompanionCompact: View {
     @ObservedObject var droplet: WipextensionDroplet
+    var context: CompactLiveActivityContext?
 
-    public init(droplet: WipextensionDroplet) {
+    public init(droplet: WipextensionDroplet, context: CompactLiveActivityContext? = nil) {
         self.droplet = droplet
+        self.context = context
     }
 
     public var body: some View {
@@ -74,9 +79,11 @@ public struct WipextensionCompanionCompact: View {
 /// Companion pill detail: Accordion expanded detail on hover while in the secondary seat.
 public struct WipextensionCompanionDetail: View {
     @ObservedObject var droplet: WipextensionDroplet
+    let context: LiveActivityContext?
 
-    public init(droplet: WipextensionDroplet) {
+    public init(droplet: WipextensionDroplet, context: LiveActivityContext? = nil) {
         self.droplet = droplet
+        self.context = context
     }
 
     public var body: some View {

@@ -305,14 +305,14 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
                 }
             }
             if !Task.isCancelled && self.isCleaning {
-                self.stopCleaning()
+                self.stopCleaning(completedNaturally: true)
             }
         }
 
         publishActivity()
     }
 
-    public func stopCleaning() {
+    public func stopCleaning(completedNaturally: Bool = false) {
         guard isCleaning else { return }
 
         // Restore built-in screen brightness
@@ -344,6 +344,29 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
         host?.log.info("Wipextension stopped.")
         publishActivity()
 
+        // Present HUD completion card if available
+        if let host = host, host.isGranted(.hud) {
+            host.hud.present(DropletHUDRequest(
+                id: "wipextension-complete",
+                duration: 3.5,
+                priority: .normal,
+                accessibilityLabel: "Cleaning completed. Mac unlocked.",
+                card: DropletHUDCard(
+                    title: "Mac Unlocked",
+                    message: completedNaturally ? "Cleaning session finished safely." : "Wipextension stopped.",
+                    systemImage: "lock.open.fill",
+                    tint: mode.accentColor
+                ),
+                isExpanded: true
+            ) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(self.mode.accentColor)
+            } trailing: {
+                Text("Unlocked")
+            })
+        }
+
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             guard let self = self else { return }
             if !self.isCleaning && self.isShowingUnlockConfirmation {
@@ -354,17 +377,42 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
     }
 
     private func publishActivity() {
-        if isCleaning || isShowingUnlockConfirmation {
-            let total = max(0, remainingSeconds)
-            let mins = total / 60
-            let secs = total % 60
+        if isCleaning {
             activitySubject.send(
                 LiveActivityState(
-                    priority: 200,
-                    accessibilityTitle: isCleaning ? "Cleaning active (\(mins)m \(secs)s remaining)" : "Cleaning unlocked",
+                    priority: .countdown,
+                    kind: .timer,
+                    accessibilityTitle: "Cleaning in progress",
+                    accessibilityValue: { [weak self] in
+                        guard let self = self else { return "" }
+                        return "\(self.formattedRemainingTime) remaining"
+                    },
                     isInteractive: false,
-                    joinsPersistentActivitySet: false,
-                    compactPresentation: nil,
+                    joinsPersistentActivitySet: true,
+                    compactPresentation: CompactLiveActivityPresentationMetadata(
+                        id: "wipextension",
+                        accessibilityLabel: "Cleaning in progress",
+                        accessibilityValue: formattedRemainingTime,
+                        preferredWidth: 84
+                    ),
+                    expandedWidgetID: "wipextension"
+                )
+            )
+        } else if isShowingUnlockConfirmation {
+            activitySubject.send(
+                LiveActivityState(
+                    priority: .status,
+                    kind: .custom,
+                    accessibilityTitle: "Cleaning unlocked",
+                    accessibilityValue: { "Unlocked" },
+                    isInteractive: false,
+                    joinsPersistentActivitySet: true,
+                    compactPresentation: CompactLiveActivityPresentationMetadata(
+                        id: "wipextension-unlocked",
+                        accessibilityLabel: "Cleaning unlocked",
+                        accessibilityValue: "Unlocked",
+                        preferredWidth: 74
+                    ),
                     expandedWidgetID: "wipextension"
                 )
             )
@@ -410,12 +458,12 @@ extension WipextensionDroplet: LiveActivityProviding {
         host?.log.debug("live activity seat is now \(seat)")
     }
 
-    public func makeCompactLeading() -> AnyView {
-        AnyView(WipextensionCompactLeading(droplet: self))
+    public func makeCompactLeading(context: CompactLiveActivityContext) -> AnyView {
+        AnyView(WipextensionCompactLeading(droplet: self, context: context))
     }
 
-    public func makeCompactTrailing() -> AnyView {
-        AnyView(WipextensionCompactTrailing(droplet: self))
+    public func makeCompactTrailing(context: CompactLiveActivityContext) -> AnyView {
+        AnyView(WipextensionCompactTrailing(droplet: self, context: context))
     }
 
     public func makeExpanded(context: LiveActivityContext) -> AnyView {
@@ -423,12 +471,124 @@ extension WipextensionDroplet: LiveActivityProviding {
     }
 
     public func makeCompanionCompact(context: CompactLiveActivityContext) -> AnyView {
-        AnyView(WipextensionCompanionCompact(droplet: self))
+        AnyView(WipextensionCompanionCompact(droplet: self, context: context))
     }
 
     public func makeCompanionDetail(context: LiveActivityContext) -> AnyView? {
         guard isCleaning else { return nil }
-        return AnyView(WipextensionCompanionDetail(droplet: self))
+        return AnyView(WipextensionCompanionDetail(droplet: self, context: context))
+    }
+}
+
+// MARK: - MCP Tools (AI Apps)
+
+extension WipextensionDroplet: MCPToolProviding {
+    public var mcpTools: [DropletMCPTool] {
+        [
+            DropletMCPTool(
+                name: "start_cleaning",
+                title: "Start cleaning",
+                summary: "Locks keyboard input, trackpad gestures, and optionally dims the display to clean the Mac. Takes duration in minutes (1–30), mode ('keyboard', 'display', or 'both'), and include_trackpad (boolean).",
+                inputSchemaJSON: """
+                {
+                  "type": "object",
+                  "properties": {
+                    "duration_minutes": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 30,
+                      "description": "Cleaning duration in minutes (1 to 30)."
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": ["keyboard", "display", "both"],
+                      "description": "The cleaning mode to use."
+                    },
+                    "include_trackpad": {
+                      "type": "boolean",
+                      "description": "Whether to block built-in trackpad input alongside keyboard."
+                    }
+                  }
+                }
+                """
+            ),
+            DropletMCPTool(
+                name: "stop_cleaning",
+                title: "Stop cleaning",
+                summary: "Stops an active cleaning session and restores screen brightness, keyboard input, and trackpad functionality."
+            ),
+            DropletMCPTool(
+                name: "get_status",
+                title: "Get cleaning status",
+                summary: "Returns the current state of Wipextension including whether cleaning is active, remaining seconds, selected mode, and trackpad lock state."
+            )
+        ]
+    }
+
+    public func performMCPTool(named name: String, argumentsJSON: String) async throws -> String {
+        switch name {
+        case "start_cleaning":
+            struct StartArgs: Decodable {
+                let duration_minutes: Int?
+                let mode: String?
+                let include_trackpad: Bool?
+            }
+
+            let args = (try? JSONDecoder().decode(StartArgs.self, from: Data(argumentsJSON.utf8)))
+
+            if let duration = args?.duration_minutes {
+                self.selectedDuration = min(max(duration, 1), 30)
+            }
+            if let modeRaw = args?.mode, let parsedMode = CleaningMode(rawValue: modeRaw) {
+                self.mode = parsedMode
+            }
+            if let trackpad = args?.include_trackpad {
+                self.includeTrackpad = trackpad
+            }
+
+            self.startCleaning()
+
+            let result: [String: Any] = [
+                "status": "cleaning_started",
+                "is_cleaning": self.isCleaning,
+                "duration_minutes": self.selectedDuration,
+                "remaining_seconds": self.remainingSeconds,
+                "mode": self.mode.rawValue,
+                "include_trackpad": self.includeTrackpad
+            ]
+            let data = try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted])
+            return String(decoding: data, as: UTF8.self)
+
+        case "stop_cleaning":
+            self.stopCleaning()
+            let result: [String: Any] = [
+                "status": "cleaning_stopped",
+                "is_cleaning": self.isCleaning,
+                "mode": self.mode.rawValue
+            ]
+            let data = try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted])
+            return String(decoding: data, as: UTF8.self)
+
+        case "get_status":
+            let result: [String: Any] = [
+                "is_cleaning": self.isCleaning,
+                "is_showing_unlock_confirmation": self.isShowingUnlockConfirmation,
+                "remaining_seconds": self.remainingSeconds,
+                "formatted_remaining_time": self.formattedRemainingTime,
+                "selected_duration_minutes": self.selectedDuration,
+                "mode": self.mode.rawValue,
+                "include_trackpad": self.includeTrackpad
+            ]
+            let data = try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted])
+            return String(decoding: data, as: UTF8.self)
+
+        default:
+            throw NSError(
+                domain: "WipextensionMCP",
+                code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "Unknown MCP tool named '\(name)'."]
+            )
+        }
     }
 }
 

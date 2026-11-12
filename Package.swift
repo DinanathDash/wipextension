@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "Wipextension", type: .dynamic, targets: ["Wipextension"])
     ],
     dependencies: [
-        .package(url: "https://gitlab.com/droppyformac1/droppykit.git", from: "1.22.0")
+        .package(url: "https://gitlab.com/droppyformac1/droppykit.git", from: "1.23.0")
     ],
     targets: [
         .target(

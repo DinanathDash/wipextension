@@ -35,19 +35,20 @@ struct ManifestTests {
         #expect(json["icon"] as? String == "Wipextension.icon")
     }
 
-    @Test("droplet.json specifies minAPI 1.22.0 or compatible")
+    @Test("droplet.json specifies minAPI 1.23.0 or compatible")
     func manifestKitRequirements() throws {
         let kit = try manifestJSON()["kit"] as? [String: Any]
-        #expect(kit?["minAPI"] as? String == "1.22.0")
+        #expect(kit?["minAPI"] as? String == "1.23.0")
         #expect(kit?["abi"] as? Int == 1)
     }
 
-    @Test("droplet.json declares required capabilities for shortcuts and accessibility")
+    @Test("droplet.json declares required capabilities for shortcuts, accessibility, and hud")
     func manifestCapabilities() throws {
         let caps = try capabilities()
         #expect(caps.contains("global-shortcuts"))
         #expect(caps.contains("accessibility"))
-        #expect(caps.count == 2)
+        #expect(caps.contains("hud"))
+        #expect(caps.count == 3)
     }
 
     @Test("droplet.json declares required surfaces")
