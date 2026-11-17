@@ -1,13 +1,13 @@
 {
   "id": "wipextension",
   "name": "Wipextension",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "summary": "Clean your Mac's screen, keyboard, and trackpad safely.",
   "description": "Block keyboard input, lock built-in trackpad gestures, and dim your screen brightness to zero so you can wipe and clean your Mac safely.",
   "category": "Productivity",
   "kit": {
     "abi": 1,
-    "minAPI": "1.23.0"
+    "minAPI": "1.27.0"
   },
   "minAppVersion": "16.0.1",
   "minMacOS": "26.0",

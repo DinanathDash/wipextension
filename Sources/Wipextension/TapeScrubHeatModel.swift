@@ -2,10 +2,10 @@
 //  TapeScrubHeatModel.swift
 //  Wipextension
 //
-//  Adapted from Droppy's High Alert / Pomodoro design reuse kit with
+//  Adapted from Droppy's Stay Awake / Pomodoro design reuse kit with
 //  permission from Jordy Spruit (author of Droppy).
 //
-//  Pure scrub-energy model for the timer tape scrubbers (Pomodoro / High Alert
+//  Pure scrub-energy model for the timer tape scrubbers (Pomodoro / Stay Awake
 //  on the Mac, and the companion's mirrored tape on iOS): how fast the user is
 //  scrubbing maps to a 0...1 intensity, which cools on an exponential curve
 //  once motion stops and falls off spatially around the active reading.

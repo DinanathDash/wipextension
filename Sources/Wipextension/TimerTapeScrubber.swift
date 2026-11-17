@@ -2,7 +2,7 @@
 //  TimerTapeScrubber.swift
 //  Wipextension
 //
-//  Adapted from Droppy's High Alert / Pomodoro design reuse kit with
+//  Adapted from Droppy's Stay Awake / Pomodoro design reuse kit with
 //  permission from Jordy Spruit (author of Droppy).
 //
 //  Tape-measure duration scrubber for the timer shelf widgets: a fixed
@@ -33,7 +33,7 @@ struct TimerTapeScrubber: View {
     var accent: Color
     var compact: Bool = false
     /// Optional replacement for the "0" tick label. An empty replacement
-    /// hides that label while preserving High Alert's indefinite accessibility value.
+    /// hides that label while preserving Stay Awake's indefinite accessibility value.
     var zeroLabelOverride: String? = nil
     /// When true, the indefinite (∞) stop sits at the FAR END of the tape ,
     /// after the largest numeric minute , instead of at zero at the start.
@@ -374,7 +374,7 @@ struct TimerTapeScrubber: View {
         // Same surface metaphor as the drag, matching the Theming color tapes
         // (`DetentTapeScrubber`): a horizontal swipe moves the tape under the
         // fixed pointer in the natural-scroll direction. This mirrors that
-        // component's `+delta` so Pomodoro / High Alert scrub the same intuitive
+        // component's `+delta` so Pomodoro / Stay Awake scrub the same intuitive
         // way instead of inverted.
         let previous = tapeValue
         let raw = tapeValue + delta / (tickSpacing * 1.2)

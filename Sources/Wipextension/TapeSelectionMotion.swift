@@ -2,7 +2,7 @@
 //  TapeSelectionMotion.swift
 //  Wipextension
 //
-//  Adapted from Droppy's High Alert / Pomodoro design reuse kit with
+//  Adapted from Droppy's Stay Awake / Pomodoro design reuse kit with
 //  permission from Jordy Spruit (author of Droppy).
 //
 

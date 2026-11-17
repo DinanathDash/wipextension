@@ -111,8 +111,8 @@ struct WipextensionSettingsView: View {
             } content: {
                 DropletSettingsCard {
                     DropletControlRow(
-                        title: String(localized: "Based on High Alert by Jordy Spruit"),
-                        infoTip: String(localized: "Wipextension adapts the minute tape design language from Droppy's High Alert with permission from Jordy Spruit.")
+                        title: String(localized: "Based on Stay Awake by Jordy Spruit"),
+                        infoTip: String(localized: "Wipextension adapts the minute tape design language from Droppy's Stay Awake with permission from Jordy Spruit.")
                     ) {
                         Button(String(localized: "Acknowledgements")) {
                             droplet.openAcknowledgements()

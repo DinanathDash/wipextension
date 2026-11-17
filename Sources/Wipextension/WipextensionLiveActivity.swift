@@ -17,9 +17,11 @@ public struct WipextensionCompactLeading: View {
     }
 
     public var body: some View {
+        let shift = context?.roundEndShift(diameter: DroppyLiveActivityMetrics.iconSize) ?? 0
         Image(systemName: droplet.isShowingUnlockConfirmation ? "checkmark.circle.fill" : droplet.mode.icon)
             .font(.system(size: DroppyLiveActivityMetrics.iconSize, weight: .medium))
             .foregroundStyle(droplet.mode.accentColor)
+            .offset(x: -shift)
             .id(droplet.isShowingUnlockConfirmation ? "unlocked" : droplet.mode.rawValue)
             .transition(DroppyTransition.compactContent)
     }
@@ -36,6 +38,7 @@ public struct WipextensionCompactTrailing: View {
     }
 
     public var body: some View {
+        let shift = context?.roundEndShift(diameter: 14) ?? 0
         HStack(spacing: 4) {
             Image(systemName: droplet.isShowingUnlockConfirmation ? "lock.open.fill" : "lock.fill")
                 .font(.system(size: 12, weight: .semibold))
@@ -54,10 +57,11 @@ public struct WipextensionCompactTrailing: View {
                 .transition(DroppyTransition.compactContent)
             }
         }
+        .offset(x: shift)
     }
 }
 
-/// Companion pill compact mark: Color-coded icon when riding the secondary seat beside another active Live Activity.
+/// Companion pill compact mark: Full size mode icon when riding the secondary seat beside another active Live Activity.
 public struct WipextensionCompanionCompact: View {
     @ObservedObject var droplet: WipextensionDroplet
     var context: CompactLiveActivityContext?
@@ -68,8 +72,14 @@ public struct WipextensionCompanionCompact: View {
     }
 
     public var body: some View {
+        let size: CGFloat = {
+            if let slot = context?.slotSize, slot.width > 0 && slot.height > 0 {
+                return min(slot.width, slot.height)
+            }
+            return 24
+        }()
         Image(systemName: droplet.isShowingUnlockConfirmation ? "checkmark.circle.fill" : droplet.mode.icon)
-            .font(.system(size: DroppyLiveActivityMetrics.iconSize, weight: .medium))
+            .font(.system(size: max(14, size * 0.65), weight: .medium))
             .foregroundStyle(droplet.mode.accentColor)
             .id(droplet.isShowingUnlockConfirmation ? "unlocked" : droplet.mode.rawValue)
             .transition(DroppyTransition.compactContent)

@@ -1,10 +1,10 @@
 Wipextension Acknowledgements
 =========================
 
-High Alert Design Language:
-The minute tape scrubber adapts the style, velocity model, and design language of Droppy's High Alert timer, provided by Jordy Spruit with permission.
+Stay Awake Design Language:
+The minute tape scrubber adapts the style, velocity model, and design language of Droppy's Stay Awake timer, provided by Jordy Spruit with permission.
 
-Droppy & High Alert:
+Droppy & Stay Awake:
 Author: Jordy Spruit
 Website: https://getdroppy.app
 

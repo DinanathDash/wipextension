@@ -38,7 +38,7 @@ droplet.json                    the manifest
 
 ## Credits & Acknowledgements
 
-- **High Alert by Jordy Spruit:** The minute tape scrubber and velocity energy model adapt the design language and mechanics of Droppy's High Alert timer, provided by Jordy Spruit with permission. Learn more at [Droppy](https://getdroppy.app).
+- **Stay Awake by Jordy Spruit:** The minute tape scrubber and velocity energy model adapt the design language and mechanics of Droppy's Stay Awake timer, provided by Jordy Spruit with permission. Learn more at [Droppy](https://getdroppy.app).
 - See [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) for full attribution.
 
 ## Licence

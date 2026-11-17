@@ -27,6 +27,7 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
 
     internal var host: DropletHost?
     private let activitySubject = CurrentValueSubject<LiveActivityState?, Never>(nil)
+    private let shelfWidgetLayoutInvalidationSubject = PassthroughSubject<ShelfWidgetID, Never>()
 
     public func autoStopDuration() -> Int {
         host?.preferences.value(forKey: "autoStopDuration", default: 60) ?? 60
@@ -270,8 +271,11 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
             }
         }
 
-        isCleaning = true
-        remainingSeconds = selectedDuration * 60
+        withAnimation(DroppyAnimation.state) {
+            isCleaning = true
+            remainingSeconds = selectedDuration * 60
+        }
+        shelfWidgetLayoutInvalidationSubject.send("wipextension")
         host?.log.info("Started Wipextension in \(self.mode.rawValue) mode for \(self.selectedDuration) minutes.")
 
         // 3. Register auto-stop listeners for system events
@@ -311,6 +315,38 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
         }
 
         publishActivity()
+
+        // Present HUD start card if available (DroppyKit 1.25.0 Island Notification Pill)
+        if let host = host, host.isGranted(.hud) {
+            let modeColor = self.mode.accentColor
+            let modeIcon = self.mode.icon
+            let durationText = "\(self.selectedDuration)m"
+            let noticeText = self.mode.blockNoticeText
+            host.hud.present(DropletHUDRequest(
+                id: "wipextension-start",
+                duration: 2.5,
+                priority: .normal,
+                accessibilityLabel: "Cleaning started in \(self.mode.rawValue) mode",
+                card: DropletHUDCard(
+                    title: "Cleaning Started",
+                    message: noticeText,
+                    art: DropletHUDArt {
+                        Image(systemName: modeIcon)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(modeColor)
+                    },
+                    systemImage: "lock.fill",
+                    tint: modeColor,
+                    trailingText: durationText
+                ),
+                isExpanded: true
+            ) {
+                Image(systemName: modeIcon)
+                    .foregroundStyle(modeColor)
+            } trailing: {
+                Text(durationText)
+            })
+        }
     }
 
     public func stopCleaning(completedNaturally: Bool = false) {
@@ -339,14 +375,18 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
         countdownTask?.cancel()
         countdownTask = nil
 
-        isCleaning = false
-        remainingSeconds = selectedDuration * 60
-        isShowingUnlockConfirmation = true
+        withAnimation(DroppyAnimation.state) {
+            isCleaning = false
+            remainingSeconds = selectedDuration * 60
+            isShowingUnlockConfirmation = true
+        }
+        shelfWidgetLayoutInvalidationSubject.send("wipextension")
         host?.log.info("Wipextension stopped.")
         publishActivity()
 
-        // Present HUD completion card if available
+        // Present HUD completion card if available (DroppyKit 1.25.0 Island Notification Pill)
         if let host = host, host.isGranted(.hud) {
+            let modeColor = self.mode.accentColor
             host.hud.present(DropletHUDRequest(
                 id: "wipextension-complete",
                 duration: 3.5,
@@ -355,18 +395,23 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
                 card: DropletHUDCard(
                     title: "Mac Unlocked",
                     message: completedNaturally ? "Cleaning session finished safely." : "Wipextension stopped.",
+                    art: DropletHUDArt {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(modeColor)
+                    },
                     systemImage: "lock.open.fill",
-                    tint: mode.accentColor
+                    tint: modeColor,
+                    trailingText: "Unlocked"
                 ),
                 isExpanded: true
             ) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(self.mode.accentColor)
+                    .foregroundStyle(modeColor)
             } trailing: {
                 Text("Unlocked")
             })
         }
-
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             guard let self = self else { return }
@@ -425,7 +470,7 @@ public final class WipextensionDroplet: NSObject, ObservableObject, Droplet {
 
 // MARK: - Shelf widget
 
-extension WipextensionDroplet: ShelfWidgetProviding {
+extension WipextensionDroplet: ShelfWidgetProviding, ShelfWidgetDynamicLayoutProviding {
     public var widgetDescriptors: [ShelfWidgetDescriptor] {
         [
             ShelfWidgetDescriptor(
@@ -435,7 +480,7 @@ extension WipextensionDroplet: ShelfWidgetProviding {
                 layoutTraits: ShelfWidgetLayoutTraits(
                     preferredSoloWidth: 350,
                     preferredPairedWidth: 175,
-                    contentHeight: .fixed(DroppyShellMetrics.shelfWidgetStandardContentHeight + 8)
+                    contentHeight: .fixed(DroppyShellMetrics.shelfWidgetStandardContentHeight + 14)
                 )
             )
         ]
@@ -446,6 +491,28 @@ extension WipextensionDroplet: ShelfWidgetProviding {
     }
 
     public func makeWidgetSettingsPopover(_ id: ShelfWidgetID) -> AnyView? { nil }
+
+    public var shelfWidgetLayoutInvalidationPublisher: AnyPublisher<ShelfWidgetID, Never> {
+        shelfWidgetLayoutInvalidationSubject.eraseToAnyPublisher()
+    }
+
+    public func currentLayoutTraits(for id: ShelfWidgetID) -> ShelfWidgetLayoutTraits? {
+        guard id == "wipextension" else { return nil }
+        if isCleaning {
+            return ShelfWidgetLayoutTraits(
+                preferredSoloWidth: 350,
+                preferredPairedWidth: 175,
+                contentHeight: .fixed(48),
+                notchWrap: ShelfWidgetNotchWrapTraits(headerHeight: 34, besideExtent: 64)
+            )
+        } else {
+            return ShelfWidgetLayoutTraits(
+                preferredSoloWidth: 350,
+                preferredPairedWidth: 175,
+                contentHeight: .fixed(DroppyShellMetrics.shelfWidgetStandardContentHeight + 14)
+            )
+        }
+    }
 }
 
 // MARK: - Live activity

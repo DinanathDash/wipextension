@@ -2,7 +2,7 @@
 //  TapeScrubGlow.swift
 //  Wipextension
 //
-//  Adapted from Droppy's High Alert / Pomodoro design reuse kit with
+//  Adapted from Droppy's Stay Awake / Pomodoro design reuse kit with
 //  permission from Jordy Spruit (author of Droppy).
 //
 
@@ -21,7 +21,7 @@ struct TapeScrubGlowPhase {
     private(set) var direction: CGFloat = 0
     /// Ticks scrubbed through since the current continuous run began (unsigned,
     /// capped). The tail is drawn this long so it only ever covers the span the
-    /// gesture actually swept, never the whole tape.
+    /// gesture actually swept, never the whole tape).
     private(set) var spanTicks: CGFloat = 0
     var isActive = false
     /// Seconds for the tail to fade from full to dark once motion stops.

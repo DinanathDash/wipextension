@@ -18,23 +18,29 @@ struct WipextensionWidget: View {
 
     private var isCompact: Bool { context.isCompact }
     private var accent: Color { droplet.mode.accentColor }
-    private var pillBg: Color { droplet.mode.pillBackground }
+    private var controlSize: CGFloat { max(34, context.washControlSize) }
 
     var body: some View {
-        Group {
-            if isCompact {
+        ZStack(alignment: .topLeading) {
+            if droplet.isCleaning {
+                runningLayout
+                    .padding(.horizontal, context.contentInsets.leading)
+                    .padding(.top, context.notchWrap != nil ? 0 : 2)
+                    .padding(.bottom, 2)
+                    .transition(DroppyTransition.compactContent)
+                    .id("running-hud")
+            } else if isCompact {
                 compactLayout
                     .padding(context.contentInsets)
+                    .padding(.bottom, 6)
+                    .transition(DroppyTransition.compactContent)
+                    .id("compact-shelf")
             } else {
                 soloLayout
-                    .padding(
-                        EdgeInsets(
-                            top: 0,
-                            leading: context.contentInsets.leading,
-                            bottom: context.contentInsets.bottom,
-                            trailing: context.contentInsets.trailing
-                        )
-                    )
+                    .padding(context.contentInsets)
+                    .padding(.bottom, 6)
+                    .transition(DroppyTransition.compactContent)
+                    .id("solo-shelf")
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -42,11 +48,81 @@ struct WipextensionWidget: View {
         .animation(reduceMotion || context.isShelfTransitioning ? nil : DroppyAnimation.state, value: droplet.isCleaning)
     }
 
+    // MARK: - Running Layout (Compact HUD when cleaning is active)
+
+    private var runningLayout: some View {
+        Group {
+            if let wrap = context.notchWrap {
+                ShelfWidgetNotchWrapRow(wrap) {
+                    runningControls
+                } trailing: {
+                    runningTimer
+                }
+            } else {
+                HStack(spacing: 8) {
+                    runningControls
+                    Spacer(minLength: 8)
+                    runningTimer
+                }
+                .frame(height: controlSize)
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    private var runningControls: some View {
+        HStack(spacing: 8) {
+            // Stop Button: Accent circular wash button with stop square
+            Button {
+                withAnimation(reduceMotion ? nil : DroppyAnimation.state) {
+                    droplet.stopCleaning()
+                }
+            } label: {
+                Image(systemName: "square.fill")
+                    .font(.system(size: 15, weight: .bold))
+            }
+            .buttonStyle(
+                DroppyWashCircleButtonStyle(
+                    diameter: controlSize,
+                    tone: .accent(accent),
+                    usesAdaptiveForegrounds: context.usesAdaptiveForegrounds
+                )
+            )
+            .help("Stop cleaning and unlock")
+
+            // Mode Indicator: Display-only circular neutral badge showing active mode (not interactive during cleaning)
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.12))
+                    .frame(width: controlSize, height: controlSize)
+
+                Image(systemName: droplet.mode.icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AdaptiveColors.notchSurfacePrimaryText)
+            }
+            .help("Cleaning mode: \(droplet.mode.title)")
+        }
+    }
+
+    private var runningTimer: some View {
+        Text(formattedTime)
+            .font(.system(size: 28, weight: .semibold, design: .rounded))
+            .monospacedDigit()
+            .contentTransition(.numericText(countsDown: true))
+            .foregroundStyle(accent)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .animation(
+                reduceMotion || context.isShelfTransitioning ? nil : DroppyAnimation.state,
+                value: formattedTime
+            )
+    }
+
     // MARK: - Solo Layout
 
     private var soloLayout: some View {
         VStack(spacing: 6) {
-            // Top Section: High Alert Minute Tape Scrubber (1 - 30 minutes)
+            // Top Section: Stay Awake Minute Tape Scrubber (1 - 30 minutes)
             TimerTapeScrubber(
                 selectedMinutes: Binding(
                     get: {
@@ -71,35 +147,35 @@ struct WipextensionWidget: View {
             HStack(spacing: 10) {
                 // 1. Start / Stop Pill Button
                 Button {
-                    droplet.toggleCleaning()
+                    withAnimation(reduceMotion ? nil : DroppyAnimation.state) {
+                        droplet.toggleCleaning()
+                    }
                 } label: {
                     Text(droplet.isCleaning ? "Stop Cleaning" : "Start Cleaning")
                         .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(accent)
-                        .padding(.horizontal, 16)
-                        .frame(height: 34)
-                        .background(
-                            Capsule()
-                                .fill(pillBg)
-                        )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(
+                    DroppyWashPillButtonStyle(
+                        height: context.washControlSize,
+                        tone: .accent(accent),
+                        usesAdaptiveForegrounds: context.usesAdaptiveForegrounds
+                    )
+                )
 
-                // 2. Mode Toggle Circular Button (Neutral glass wash, no accent color, no outline)
+                // 2. Mode Toggle Circular Button (Neutral glass wash)
                 Button {
                     cycleMode()
                 } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.12))
-                            .frame(width: 34, height: 34)
-
-                        Image(systemName: droplet.mode.icon)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(AdaptiveColors.notchSurfacePrimaryText)
-                    }
+                    Image(systemName: droplet.mode.icon)
+                        .font(.system(size: 14, weight: .semibold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(
+                    DroppyWashCircleButtonStyle(
+                        diameter: context.washControlSize,
+                        tone: .neutral,
+                        usesAdaptiveForegrounds: context.usesAdaptiveForegrounds
+                    )
+                )
                 .help("Switch cleaning mode: \(droplet.mode.title)")
 
                 Spacer(minLength: 8)
@@ -146,35 +222,35 @@ struct WipextensionWidget: View {
 
             HStack {
                 Button {
-                    droplet.toggleCleaning()
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(pillBg)
-                            .frame(width: 36, height: 36)
-
-                        Image(systemName: droplet.isCleaning ? "lock.fill" : "lock.open.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(accent)
+                    withAnimation(reduceMotion ? nil : DroppyAnimation.state) {
+                        droplet.toggleCleaning()
                     }
+                } label: {
+                    Image(systemName: droplet.isCleaning ? "lock.fill" : "lock.open.fill")
+                        .font(.system(size: 14, weight: .semibold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(
+                    DroppyWashCircleButtonStyle(
+                        diameter: context.washControlSize,
+                        tone: .accent(accent),
+                        usesAdaptiveForegrounds: context.usesAdaptiveForegrounds
+                    )
+                )
 
                 // Neutral mode button in compact layout
                 Button {
                     cycleMode()
                 } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.12))
-                            .frame(width: 28, height: 28)
-
-                        Image(systemName: droplet.mode.icon)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(AdaptiveColors.notchSurfacePrimaryText)
-                    }
+                    Image(systemName: droplet.mode.icon)
+                        .font(.system(size: 12, weight: .semibold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(
+                    DroppyWashCircleButtonStyle(
+                        diameter: context.washControlSize,
+                        tone: .neutral,
+                        usesAdaptiveForegrounds: context.usesAdaptiveForegrounds
+                    )
+                )
 
                 Spacer(minLength: 0)
 
